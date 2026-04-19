@@ -2,8 +2,6 @@
 
 A web app that computes the perpendicular distance from a point to a plane in 3D space.
 
-![screenshot](docs/screenshot.png)
-
 ## Features
 
 - **Parameterform** — define the plane by three points lying on it
