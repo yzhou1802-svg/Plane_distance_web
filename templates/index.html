@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plane–Point Distance Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #6c8ef7;
+    --accent2: #a78bfa;
+    --text: #e2e8f0;
+    --text-muted: #8892b0;
+    --success: #34d399;
+    --error: #f87171;
+    --warning: #fbbf24;
+    --radius: 10px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+  }
+
+  header p {
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+    font-size: 0.9rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 680px;
+    overflow: hidden;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 0.85rem 0.5rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    border-bottom: 3px solid transparent;
+    letter-spacing: 0.3px;
+  }
+
+  .tab-btn:hover { color: var(--text); background: rgba(108,142,247,0.05); }
+
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: rgba(108,142,247,0.08);
+  }
+
+  /* Panels */
+  .panel { display: none; padding: 1.8rem; }
+  .panel.active { display: block; }
+
+  .panel-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 1.4rem;
+    line-height: 1.5;
+    padding: 0.7rem 1rem;
+    background: rgba(108,142,247,0.07);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  /* Point group */
+  .point-group {
+    margin-bottom: 1.2rem;
+  }
+
+  .point-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 0.5rem;
+  }
+
+  .point-label span {
+    color: var(--accent2);
+  }
+
+  .coord-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+  }
+
+  .coord-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .coord-field label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="number"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.88rem;
+    font-family: var(--font);
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,142,247,0.15);
+  }
+
+  /* Coefficient row for Koordinatenform */
+  .coef-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .coef-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .coef-field label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.2rem 0;
+  }
+
+  .free-point-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 0.5rem;
+  }
+
+  .free-point-label span { color: var(--success); }
+
+  /* Calculate button */
+  .calc-btn {
+    width: 100%;
+    padding: 0.8rem;
+    margin-top: 1.4rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .calc-btn:hover { opacity: 0.9; }
+  .calc-btn:active { transform: scale(0.99); }
+
+  /* Result section */
+  .result-section {
+    margin-top: 1.4rem;
+    display: none;
+  }
+
+  .result-section.visible { display: block; }
+
+  .result-error {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.1rem;
+    color: var(--error);
+    font-size: 0.85rem;
+  }
+
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .result-distance {
+    padding: 1.2rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .result-distance .label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  .result-distance .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--success);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .result-distance .unit {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .result-on-plane {
+    padding: 1.1rem 1.4rem;
+    color: var(--warning);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .result-details {
+    padding: 1rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.83rem;
+  }
+
+  .detail-row .dlabel {
+    color: var(--text-muted);
+  }
+
+  .detail-row .dvalue {
+    color: var(--text);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.82rem;
+    background: rgba(255,255,255,0.05);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  footer {
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Plane–Point Distance Calculator</h1>
+  <p>Compute the perpendicular distance from a point to a plane in 3D space</p>
+</header>
+
+<div class="card">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('param', this)">Parameterform</button>
+    <button class="tab-btn" onclick="switchTab('koord', this)">Koordinatenform</button>
+    <button class="tab-btn" onclick="switchTab('norm', this)">Normaleform</button>
+  </div>
+
+  <!-- Parameterform -->
+  <div id="panel-param" class="panel active">
+    <p class="panel-desc">
+      Define the plane by three points <strong>P1, P2, P3</strong> lying on it.
+      Enter the free point <strong>P4</strong> whose distance to the plane you want.
+    </p>
+
+    <div class="point-group">
+      <div class="point-label"><span>P1</span> — first point on the plane</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>x</label><input type="number" id="param-p1-x" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>y</label><input type="number" id="param-p1-y" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>z</label><input type="number" id="param-p1-z" step="any" placeholder="0"></div>
+      </div>
+    </div>
+
+    <div class="point-group">
+      <div class="point-label"><span>P2</span> — second point on the plane</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>x</label><input type="number" id="param-p2-x" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>y</label><input type="number" id="param-p2-y" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>z</label><input type="number" id="param-p2-z" step="any" placeholder="0"></div>
+      </div>
+    </div>
+
+    <div class="point-group">
+      <div class="point-label"><span>P3</span> — third point on the plane</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>x</label><input type="number" id="param-p3-x" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>y</label><input type="number" id="param-p3-y" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>z</label><input type="number" id="param-p3-z" step="any" placeholder="0"></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="point-group">
+      <div class="free-point-label"><span>P4</span> — free point (distance target)</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>x</label><input type="number" id="param-p4-x" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>y</label><input type="number" id="param-p4-y" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>z</label><input type="number" id="param-p4-z" step="any" placeholder="0"></div>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate('param')">Calculate Distance</button>
+
+    <div id="result-param" class="result-section"></div>
+  </div>
+
+  <!-- Koordinatenform -->
+  <div id="panel-koord" class="panel">
+    <p class="panel-desc">
+      Enter the plane as <strong>ax + by + cz = d</strong>, then the free point <strong>P</strong>.
+    </p>
+
+    <div class="point-label" style="margin-bottom:0.5rem">Plane equation coefficients</div>
+    <div class="coef-row">
+      <div class="coef-field"><label>a (x)</label><input type="number" id="koord-a" step="any" placeholder="1"></div>
+      <div class="coef-field"><label>b (y)</label><input type="number" id="koord-b" step="any" placeholder="0"></div>
+      <div class="coef-field"><label>c (z)</label><input type="number" id="koord-c" step="any" placeholder="0"></div>
+      <div class="coef-field"><label>d (= rhs)</label><input type="number" id="koord-d" step="any" placeholder="0"></div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="point-group">
+      <div class="free-point-label"><span>P</span> — free point (distance target)</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>x</label><input type="number" id="koord-px" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>y</label><input type="number" id="koord-py" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>z</label><input type="number" id="koord-pz" step="any" placeholder="0"></div>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate('koord')">Calculate Distance</button>
+
+    <div id="result-koord" class="result-section"></div>
+  </div>
+
+  <!-- Normaleform -->
+  <div id="panel-norm" class="panel">
+    <p class="panel-desc">
+      Enter the plane in Normaleform: a <strong>normal vector n</strong> and a <strong>point Q on the plane</strong>.
+      The plane is the set of all x with (x − Q) · n = 0.
+    </p>
+
+    <div class="point-group">
+      <div class="point-label"><span>n</span> — normal vector of the plane</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>n₁</label><input type="number" id="norm-n1" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>n₂</label><input type="number" id="norm-n2" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>n₃</label><input type="number" id="norm-n3" step="any" placeholder="1"></div>
+      </div>
+    </div>
+
+    <div class="point-group">
+      <div class="point-label"><span>Q</span> — a point on the plane</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>x</label><input type="number" id="norm-qx" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>y</label><input type="number" id="norm-qy" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>z</label><input type="number" id="norm-qz" step="any" placeholder="0"></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="point-group">
+      <div class="free-point-label"><span>P</span> — free point (distance target)</div>
+      <div class="coord-row">
+        <div class="coord-field"><label>x</label><input type="number" id="norm-px" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>y</label><input type="number" id="norm-py" step="any" placeholder="0"></div>
+        <div class="coord-field"><label>z</label><input type="number" id="norm-pz" step="any" placeholder="0"></div>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate('norm')">Calculate Distance</button>
+
+    <div id="result-norm" class="result-section"></div>
+  </div>
+</div>
+
+<footer>Plane–Point Distance Calculator &mdash; 3D Geometry Tool</footer>
+
+<script>
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  function val(id) {
+    const v = document.getElementById(id).value.trim();
+    if (v === '') throw new Error(`Field "${id.replace(/-/g,' ')}" is empty.`);
+    const n = parseFloat(v);
+    if (isNaN(n)) throw new Error(`"${v}" is not a valid number.`);
+    return n;
+  }
+
+  function fmtVec(arr) {
+    return '(' + arr.map(v => {
+      const r = Math.round(v * 10000) / 10000;
+      return r === Math.trunc(r) ? r.toFixed(0) : r.toFixed(4).replace(/\.?0+$/, '');
+    }).join(', ') + ')';
+  }
+
+  function fmtDist(d) {
+    return (Math.round(d * 10000) / 10000).toString();
+  }
+
+  function showResult(panelId, data) {
+    const el = document.getElementById('result-' + panelId);
+    el.classList.add('visible');
+
+    if (data.status === 'error') {
+      el.innerHTML = `<div class="result-error">${data.message || data.error || 'Unknown error'}</div>`;
+      return;
+    }
+
+    if (data.status === 'on_plane') {
+      let html = `<div class="result-card">
+        <div class="result-on-plane">The point lies on the plane — distance is 0.</div>
+        <div class="result-details">`;
+      html += detailRows(data);
+      html += `</div></div>`;
+      el.innerHTML = html;
+      return;
+    }
+
+    let html = `<div class="result-card">
+      <div class="result-distance">
+        <span class="label">Distance</span>
+        <span class="value">${fmtDist(data.distance)}</span>
+        <span class="unit">units</span>
+      </div>
+      <div class="result-details">`;
+    html += detailRows(data);
+    html += `</div></div>`;
+    el.innerHTML = html;
+  }
+
+  function detailRows(data) {
+    let rows = '';
+    if (data.intersection) {
+      rows += row('Foot of perpendicular', fmtVec(data.intersection));
+    }
+    if (data.normal_vector) {
+      rows += row('Normal vector', fmtVec(data.normal_vector));
+    }
+    if (data.koordinatenform) {
+      rows += row('Plane (Koordinatenform)', data.koordinatenform);
+    }
+    if (data.direction_vector_1) {
+      rows += row('Direction vector 1', fmtVec(data.direction_vector_1));
+      rows += row('Direction vector 2', fmtVec(data.direction_vector_2));
+    }
+    return rows;
+  }
+
+  function row(label, value) {
+    return `<div class="detail-row"><span class="dlabel">${label}</span><span class="dvalue">${value}</span></div>`;
+  }
+
+  async function calculate(mode) {
+    const el = document.getElementById('result-' + mode);
+    el.innerHTML = '';
+    el.classList.remove('visible');
+
+    let body, url;
+    try {
+      if (mode === 'param') {
+        url = '/api/parameterform';
+        body = {
+          p1: [val('param-p1-x'), val('param-p1-y'), val('param-p1-z')],
+          p2: [val('param-p2-x'), val('param-p2-y'), val('param-p2-z')],
+          p3: [val('param-p3-x'), val('param-p3-y'), val('param-p3-z')],
+          point: [val('param-p4-x'), val('param-p4-y'), val('param-p4-z')],
+        };
+      } else if (mode === 'koord') {
+        url = '/api/koordinatenform';
+        body = {
+          a: val('koord-a'), b: val('koord-b'), c: val('koord-c'), d: val('koord-d'),
+          point: [val('koord-px'), val('koord-py'), val('koord-pz')],
+        };
+      } else {
+        url = '/api/normaleform';
+        body = {
+          normal: [val('norm-n1'), val('norm-n2'), val('norm-n3')],
+          plane_point: [val('norm-qx'), val('norm-qy'), val('norm-qz')],
+          point: [val('norm-px'), val('norm-py'), val('norm-pz')],
+        };
+      }
+    } catch (e) {
+      showResult(mode, { status: 'error', message: e.message });
+      return;
+    }
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await resp.json();
+      showResult(mode, data);
+    } catch (e) {
+      showResult(mode, { status: 'error', message: 'Network error: ' + e.message });
+    }
+  }
+</script>
+</body>
+</html>
